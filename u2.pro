@@ -1,16 +1,13 @@
 TEMPLATE = app
 INCLUDEPATH += .
-INCLUDEPATH += ./include
 
 # Input
 SOURCES += main.cpp \
             u2_window.cpp \
-            location.cpp \
-            mapwindow.cpp
+            location.cpp
            
 HEADERS = u2_window.h \
-            location.h \
-            mapwindow.hpp
+            location.h
 
 #RESOURCES += rendercontrol.qrc
 
