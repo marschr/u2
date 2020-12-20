@@ -3,4 +3,4 @@ moc_*
 a.out
 .qmake.stash
 Makefile
-./u2
+u2

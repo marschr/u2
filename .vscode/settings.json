@@ -4,6 +4,9 @@
         "qmapbox": "cpp",
         "qmapboxgl": "cpp",
         "qthread": "cpp",
-        "qguiapplication": "cpp"
+        "qguiapplication": "cpp",
+        "qopenglwidget": "cpp",
+        "qopenglfunctions": "cpp",
+        "qwidget": "cpp"
     }
 }
