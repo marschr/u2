@@ -89,7 +89,7 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
             // Not in all styles, but will work on streets
             QString before = "waterway-label";
 
-            QFile geojson(":source2.geojson");
+            QFile geojson(":test2.geojson");
             geojson.open(QIODevice::ReadOnly);
 
             // The data source for the route line and markers
@@ -467,7 +467,7 @@ void MapWindow::initializeGL()
     connect(m_map.data(), SIGNAL(needsRendering()), this, SLOT(update()));
 
     // Set default location to Helsinki.
-    m_map->setCoordinateZoom(QMapbox::Coordinate(60.170448, 24.942046), 14);
+    m_map->setCoordinateZoom(QMapbox::Coordinate(37.721044, -122.472303), 14);
 
     QString styleUrl = qgetenv("MAPBOX_STYLE_URL");
     if (styleUrl.isEmpty()) {

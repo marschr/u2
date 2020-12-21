@@ -20,11 +20,16 @@ Q_OBJECT
 
         cereal::ControlsState::Reader controls_state;
         cereal::GpsLocationData::Reader gps_state;
+
+        cereal::ModelDataV2::Reader model;
     
         float lat;
         float lon;
         float bea;
         float vel;
+
+        cereal::ModelDataV2::XYZTData::Reader road_edges;
+        float road_edge_std[2];
 
     public slots:
         void handle_message();

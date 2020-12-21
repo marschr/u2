@@ -12,7 +12,7 @@ HEADERS = u2_window.h \
             location.h \
             mapwindow.hpp
 
-#RESOURCES += rendercontrol.qrc
+RESOURCES += geojson.qrc
 
 CONFIG += c++14
 CONFIG += debug
