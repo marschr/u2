@@ -6,18 +6,20 @@ INCLUDEPATH += ./include
 SOURCES += main.cpp \
             u2_window.cpp \
             location.cpp \
-            mapwindow.cpp
+            mapwindow.cpp \
+            scatterdatamodifier.cpp
            
 HEADERS = u2_window.h \
             location.h \
-            mapwindow.hpp
+            mapwindow.hpp \
+            scatterdatamodifier.h
 
 RESOURCES += geojson.qrc
 
 CONFIG += c++14
 CONFIG += debug
 
-QT += core qml quick widgets opengl network positioning location sql openglextensions websockets
+QT += core qml quick widgets opengl network datavisualization positioning location sql openglextensions websockets
 
 
 

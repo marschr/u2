@@ -6,8 +6,6 @@
 
 #include "location.h"
 
-#define TRAJECTORY_SIZE 33
-
 Location::Location(){
     qDebug() << "Location constuct()!";
     m_sm = new SubMaster({"modelV2", "controlsState", "gpsLocationExternal"});
@@ -24,10 +22,6 @@ void Location::handle_message(){
 
     // GpsLocationData
 
-
-    float edgeX[TRAJECTORY_SIZE];
-    float edgeY[TRAJECTORY_SIZE];
-    float edgeZ[TRAJECTORY_SIZE];
 
     long frameIdx;
     
@@ -51,9 +45,9 @@ void Location::handle_message(){
 
                             road_edges = model.getRoadEdges()[re_idx];
                             for (int i = 0; i < TRAJECTORY_SIZE; i++) {
-                                 edgeX[i] = road_edges.getX()[i];
-                                 edgeY[i] = road_edges.getY()[i];
-                                 edgeZ[i] = road_edges.getZ()[i];
+                                 edgeX[re_idx][i] = road_edges.getX()[i];
+                                 edgeY[re_idx][i] = road_edges.getY()[i];
+                                 edgeZ[re_idx][i] = road_edges.getZ()[i];
                                 // qDebug() << "re_idx: " << re_idx << "; x: " << road_edges.getX()[i] << "; y: " << road_edges.getY()[i] << "; z: " << road_edges.getZ()[i];
 
                             }                    
@@ -62,46 +56,46 @@ void Location::handle_message(){
                         road_edge_std[re_idx] = 1.0;
                     }
                 }
-                
-                //csv printer
-                frameIdx++;
-                for (int i = 0; i < TRAJECTORY_SIZE; i++) {
-                    qDebug() << frameIdx << "," << edgeX[i] << "," << edgeY[i] << "," << edgeZ[i];
-                }
 
-                  
+                // //csv printer
+                // frameIdx++;
+                // for (int i = 0; i < TRAJECTORY_SIZE; i++) {
+                //     qDebug() << frameIdx << "," << edgeX[i] << "," << edgeY[i] << "," << edgeZ[i];
+                // }
+                // QVector3D(edgeX,edgeY,edgeZ);
+                
                 
             }
 
 
             
-            // if (sm.updated("controlsState")) {
-            //     // qDebug() << "got update: controlsState";
+            if (sm.updated("controlsState")) {
+                // qDebug() << "got update: controlsState";
 
-            //     // cereal::Event::Reader
-            //     auto event = sm["controlsState"];
-            //     // event.getControlsState();
-            //     controls_state = event.getControlsState();
-            //     vel = controls_state.getVEgo();
+                // cereal::Event::Reader
+                auto event = sm["controlsState"];
+                // event.getControlsState();
+                controls_state = event.getControlsState();
+                vel = controls_state.getVEgo();
 
                 
-            //     // getVEgo()
-            //     emit newMsg();
-            //     // auto data = sm["radarState"].getRadarState();
-            //     // scene.lead_data[0] = data.getLeadOne();
-            //     // scene.lead_data[1] = data.getLeadTwo();
-            // }
+                // getVEgo()
+                emit newMsg();
+                // auto data = sm["radarState"].getRadarState();
+                // scene.lead_data[0] = data.getLeadOne();
+                // scene.lead_data[1] = data.getLeadTwo();
+            }
 
-            // if (sm.updated("gpsLocationExternal")){
-            //     // qDebug() << "got update: gpsLocationExternal";
+            if (sm.updated("gpsLocationExternal")){
+                // qDebug() << "got update: gpsLocationExternal";
 
-            //     auto event = sm["gpsLocationExternal"];
-            //     gps_state = event.getGpsLocationExternal();
-            //     lat = gps_state.getLatitude();
-            //     lon = gps_state.getLongitude();
-            //     bea = gps_state.getBearing();
-            //     qDebug() << "got GPS data!";
-            // }
+                auto event = sm["gpsLocationExternal"];
+                gps_state = event.getGpsLocationExternal();
+                lat = gps_state.getLatitude();
+                lon = gps_state.getLongitude();
+                bea = gps_state.getBearing();
+                // qDebug() << "got GPS data!";
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 #include <QWindow>
 
+#include <QThread>
 
 #include "location.h"
 

@@ -8,18 +8,18 @@ U2Window::U2Window()
 {
     qDebug() << "ctor";
 
-    QThread *thread = new QThread;
-    location = new Location();
-    location->moveToThread(thread);
+    // location = new Location();
+    // location->moveToThread(thread);
 
-    connect(thread, &QThread::started, location, &Location::handle_message);
-    connect(location, SIGNAL (newMsg()), this, SLOT (recvMsg()));
+    // connect(thread, &QThread::started, location, &Location::handle_message);
+    // connect(location, SIGNAL (newMsg()), this, SLOT (recvMsg()));
 
-    thread->start();
+    // thread->start();
 }
 
 void U2Window::recvMsg(){
-    qDebug() << "lat: " << location->lat << " lon: " << location->lon << " bea: " << location->bea;
+    // location->edgeX
+    // qDebug() << "lat: " << location->lat << " lon: " << location->lon << " bea: " << location->bea;
 }
 
 U2Window::~U2Window(){
