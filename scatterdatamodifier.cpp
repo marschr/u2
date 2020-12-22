@@ -38,11 +38,15 @@
 #include <QtCore/qrandom.h>
 #include <QtWidgets/QComboBox>
 
+#include <QGeoCoordinate>
+
 #include <QCategory3DAxis>
 
 #define LANE_LINES 4
 
 using namespace QtDataVisualization;
+
+#define myqDebug() qDebug() << fixed << qSetRealNumberPrecision(10)
 
 //#define RANDOM_SCATTER // Uncomment this to switch to random scatter
 
@@ -66,7 +70,7 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter, Location *location
     font.setPointSize(m_fontSize);
     m_graph->activeTheme()->setFont(font);
     m_graph->setShadowQuality(QAbstract3DGraph::ShadowQualitySoftLow);
-     m_graph->activeTheme()->setBackgroundEnabled(false);
+    m_graph->activeTheme()->setBackgroundEnabled(false);
 
 
     
@@ -106,16 +110,24 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter, Location *location
     m_graph->seriesList().at(0)->setMesh(QAbstract3DSeries::Mesh::MeshPoint);
     m_graph->seriesList().at(1)->setMesh(QAbstract3DSeries::Mesh::MeshPoint);
 
-    m_graph->axisX()->setLabelFormat(QStringLiteral("%.2f X"));
-    m_graph->axisY()->setLabelFormat(QStringLiteral("%.2f Y"));
-    m_graph->axisZ()->setLabelFormat(QStringLiteral("%.2f Z"));
+    m_graph->axisX()->setLabelFormat(QStringLiteral("%.10f X"));
+    m_graph->axisY()->setLabelFormat(QStringLiteral("%.10f Y"));
+    m_graph->axisZ()->setLabelFormat(QStringLiteral("%.10f Z"));
 
     m_graph->axisX()->setLabelAutoRotation(90);
     m_graph->axisY()->setLabelAutoRotation(90);
     m_graph->axisZ()->setLabelAutoRotation(90);
 
-    m_graph->axisX()->setRange(0,192);
-    m_graph->axisY()->setRange(-30,30);
+
+
+    m_graph->axisY()->setRange(34.097-0.005,34.097+0.005);
+    m_graph->axisX()->setRange(-118.314-0.005,-118.314+0.005);
+   
+    // m_graph->axisX()->setRange(0,192);
+    // m_graph->axisY()->setRange(-30,30);
+    
+    // m_graph->axisX()->setAutoAdjustRange(true);
+    // m_graph->axisY()->setAutoAdjustRange(true);
     
 
     //! [2]
@@ -144,56 +156,90 @@ void ScatterDataModifier::updateData(){
 
     // QColor color_ll = QColor(0,0,0);
 
-    for (int ll_idx = 0; ll_idx < LANE_LINES; ll_idx++)
-    {
-        QScatterDataArray *dataArray_ll = new QScatterDataArray;
-        dataArray_ll->resize(TRAJECTORY_SIZE);
-        QScatterDataItem *ptrToDataArray_ll = &dataArray_ll->first();
-
-        float colorMult = qBound((double)m_location->lane_line_prob[ll_idx], 0.0, 1.0);
-
-        // qDebug() << "colorMultLL: " << colorMult;
-        
-        QColor color_ll = QColor(colorMult, colorMult, colorMult);
-
-       for (int i = 0; i < TRAJECTORY_SIZE; i++) {
-            ptrToDataArray_ll->setPosition(QVector3D(m_location->laneX[ll_idx][i],
-                                                m_location->laneY[ll_idx][i],
-                                                m_location->laneZ[ll_idx][i]
-                                                ));
-            ptrToDataArray_ll++;
-       }
-
-        m_graph->seriesList().at(ll_idx)->dataProxy()->resetArray(dataArray_ll);
-        m_graph->seriesList().at(ll_idx)->setBaseColor(color_ll);
-
-    }
     
-    QColor color_re = QColor(0,0,255);
 
-    for (int re_idx = 0; re_idx < 2; re_idx++){
+
+    // for (int ll_idx = 0; ll_idx < LANE_LINES; ll_idx++)
+    // {
+    //     QScatterDataArray *dataArray_ll = new QScatterDataArray;
+    //     dataArray_ll->resize(TRAJECTORY_SIZE);
+    //     QScatterDataItem *ptrToDataArray_ll = &dataArray_ll->first();
+
+    //     float colorMult = qBound((double)m_location->lane_line_prob[ll_idx], 0.0, 1.0);
+
+    //     // qDebug() << "colorMultLL: " << colorMult;
+        
+    //     QColor color_ll = QColor(colorMult, colorMult, colorMult);
+
+    //     for (int i = 0; i < TRAJECTORY_SIZE; i++) {
+    //             ptrToDataArray_ll->setPosition(QVector3D(m_location->laneX[ll_idx][i],
+    //                                                 m_location->laneY[ll_idx][i],
+    //                                                 m_location->laneZ[ll_idx][i]
+    //                                                 ));
+    //             ptrToDataArray_ll++;
+    //     }
+
+    //     m_graph->seriesList().at(ll_idx)->dataProxy()->resetArray(dataArray_ll);
+    //     m_graph->seriesList().at(ll_idx)->setBaseColor(color_ll);
+
+    // }
+
+    if (m_location->modelConnected) {
+        QGeoCoordinate egoPos = QGeoCoordinate((double)m_location->lat, (double)m_location->lon);
+        QGeoCoordinate re_geo[2];
+        re_geo[0] = egoPos.atDistanceAndAzimuth(m_location->edgeY[0][0], m_location->bea-90);
+        re_geo[1] = egoPos.atDistanceAndAzimuth(m_location->edgeY[1][0], m_location->bea+90);
+        
+        // myqDebug() << "egoPos lon: " << egoPos.longitude() << "egoPos lat: " << egoPos.latitude();
+        // myqDebug() << " re[0] lon: " << re_geo[0].longitude() << " re[0] lat: " << re_geo[0].latitude();
+
 
         QScatterDataArray *dataArray_re = new QScatterDataArray;
-        dataArray_re->resize(TRAJECTORY_SIZE); //6 = ll + re;
+        dataArray_re->resize(2); //6 = ll + re;
         QScatterDataItem *ptrToDataArray_re = &dataArray_re->first();
 
-        float colorMult = qBound((double)1.0-m_location->road_edge_std[re_idx], 0.0, 1.0);
-
-        qDebug() << "colorMultRE: " << colorMult;
         
-        color_re = QColor((int)255*colorMult, 0, 0);
 
-        for (int i = 0; i < TRAJECTORY_SIZE; i++) {
-            ptrToDataArray_re->setPosition(QVector3D(m_location->edgeX[re_idx][i],
-                                                m_location->edgeY[re_idx][i],
-                                                m_location->edgeZ[re_idx][i]
-                                                ));
-            ptrToDataArray_re++;
-        }
-        
-        m_graph->seriesList().at(re_idx+4)->dataProxy()->resetArray(dataArray_re);
-        m_graph->seriesList().at(re_idx+4)->setBaseColor(color_re);
+        ptrToDataArray_re->setPosition(QVector3D(re_geo[0].longitude(), re_geo[0].latitude(), 0));
+        ptrToDataArray_re++;
+        ptrToDataArray_re->setPosition(QVector3D(re_geo[1].longitude(), re_geo[1].latitude(), 0));
+
+        m_graph->seriesList().at(0)->dataProxy()->addItems(*dataArray_re);
+        // m_graph->seriesList().at(0)->dataProxy()->resetArray(dataArray_re);
+        m_graph->seriesList().at(0)->setBaseColor(QColor(255,0,0));
     }
+
+    // iteration++;
+    
+
+
+
+
+    // for (int re_idx = 0; re_idx < 2; re_idx++){
+
+    //     QScatterDataArray *dataArray_re = new QScatterDataArray;
+    //     dataArray_re->resize(TRAJECTORY_SIZE); //6 = ll + re;
+    //     QScatterDataItem *ptrToDataArray_re = &dataArray_re->first();
+
+    //     float colorMult = qBound((double)1.0-m_location->road_edge_std[re_idx], 0.0, 1.0);
+
+    //     qDebug() << "colorMultRE: " << colorMult;
+        
+    //     QColor color_re = QColor((int)255*colorMult, 0, 0);
+        
+
+
+    //     for (int i = 0; i < TRAJECTORY_SIZE; i++) {
+    //         ptrToDataArray_re->setPosition(QVector3D(m_location->edgeX[re_idx][i],
+    //                                             m_location->edgeY[re_idx][i],
+    //                                             m_location->edgeZ[re_idx][i]
+    //                                             ));
+    //         ptrToDataArray_re++;
+    //     }
+        
+    //     m_graph->seriesList().at(re_idx+4)->dataProxy()->resetArray(dataArray_re);
+    //     m_graph->seriesList().at(re_idx+4)->setBaseColor(color_re);
+    // }
 }
 
 

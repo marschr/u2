@@ -78,6 +78,8 @@ Q_SIGNALS:
 private:
     Location *m_location;
     QVector3D randVector();
+
+    int iteration = 0;
     
     Q3DScatter *m_graph;
     int m_fontSize;

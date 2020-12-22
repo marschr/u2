@@ -45,6 +45,8 @@ Q_OBJECT
         float edgeY[2][TRAJECTORY_SIZE];
         float edgeZ[2][TRAJECTORY_SIZE];
 
+        bool modelConnected = false;
+
     public slots:
         void handle_message();
 

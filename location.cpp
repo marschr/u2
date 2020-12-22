@@ -34,6 +34,9 @@ void Location::handle_message(){
             if (sm.updated("modelV2")) {
                 // qDebug() << "got update: modelV2";
 
+                modelConnected = true;
+                // qDebug() << "modelConnected: " << modelConnected;
+
                 auto event = sm["modelV2"];
                 model = event.getModelV2();
                 
@@ -70,6 +73,8 @@ void Location::handle_message(){
                     }
                 }
 
+                emit newMsg();
+
                 // //csv printer
                 // frameIdx++;
                 // for (int i = 0; i < TRAJECTORY_SIZE; i++) {
@@ -78,6 +83,9 @@ void Location::handle_message(){
                 // QVector3D(edgeX,edgeY,edgeZ);
                 
                 
+            } else {
+                modelConnected = false;
+                // qDebug() << "modelConnected: " << modelConnected;
             }
 
 
