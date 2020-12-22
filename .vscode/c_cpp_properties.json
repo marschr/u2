@@ -7,7 +7,8 @@
                 "/usr/local/Qt-5.12.8/include/",
                 "/usr/local/Qt-5.12.8/include/QtCore",
                 "/usr/local/Qt-5.12.8/include/QtGui",
-                "/usr/local/Qt-5.12.8/include/QtWidgets"
+                "/usr/local/Qt-5.12.8/include/QtWidgets",
+                "/usr/local/Qt-5.12.8/include/QtDataVisualization"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

@@ -38,6 +38,10 @@
 #include <QtCore/qrandom.h>
 #include <QtWidgets/QComboBox>
 
+#include <QCategory3DAxis>
+
+#define LANE_LINES 4
+
 using namespace QtDataVisualization;
 
 //#define RANDOM_SCATTER // Uncomment this to switch to random scatter
@@ -57,20 +61,63 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter, Location *location
       m_location(location)
 {
     //! [0]
-    m_graph->activeTheme()->setType(Q3DTheme::ThemeEbony);
+    m_graph->activeTheme()->setType(Q3DTheme::ThemeQt);
     QFont font = m_graph->activeTheme()->font();
     font.setPointSize(m_fontSize);
     m_graph->activeTheme()->setFont(font);
     m_graph->setShadowQuality(QAbstract3DGraph::ShadowQualitySoftLow);
-    m_graph->scene()->activeCamera()->setCameraPreset(Q3DCamera::CameraPresetFront);
+     m_graph->activeTheme()->setBackgroundEnabled(false);
+
+
+    
     //! [0]
 
     //! [2]
-    QScatterDataProxy *proxy = new QScatterDataProxy;
-    QScatter3DSeries *series = new QScatter3DSeries(proxy);
-    series->setItemLabelFormat(QStringLiteral("@xTitle: @xLabel @yTitle: @yLabel @zTitle: @zLabel"));
-    series->setMeshSmooth(m_smooth);
-    m_graph->addSeries(series);
+    // QScatterDataProxy *left_lane_proxy = new QScatterDataProxy;
+    // QScatterDataProxy *right_lane_proxy = new QScatterDataProxy;
+
+    // QList<QScatterDataProxy> *lane_line_proxy = new QList<QScatterDataProxy>;
+
+    QScatterDataProxy *lane_line_proxy[LANE_LINES];
+    QScatter3DSeries *lane_line_series[LANE_LINES];
+    for (int i = 0; i < LANE_LINES; i++)
+    {
+        lane_line_proxy[i] = new QScatterDataProxy;
+        lane_line_series[i] = new QScatter3DSeries(lane_line_proxy[i]);
+        lane_line_series[i]->setMesh(QAbstract3DSeries::Mesh::MeshPoint);
+    }
+    
+    QScatterDataProxy *left_edge_proxy = new QScatterDataProxy;
+    QScatterDataProxy *right_edge_proxy = new QScatterDataProxy;
+
+    QScatter3DSeries *left_edge_series = new QScatter3DSeries(left_edge_proxy);
+    QScatter3DSeries *right_edge_series = new QScatter3DSeries(right_edge_proxy);
+    left_edge_series->setMesh(QAbstract3DSeries::Mesh::MeshPoint);
+    right_edge_series->setMesh(QAbstract3DSeries::Mesh::MeshPoint);
+
+    m_graph->addSeries(left_edge_series);
+    m_graph->addSeries(right_edge_series);
+
+    for (int i = 0; i < LANE_LINES; i++)
+    {
+        m_graph->addSeries(lane_line_series[i]);
+    }
+
+    m_graph->seriesList().at(0)->setMesh(QAbstract3DSeries::Mesh::MeshPoint);
+    m_graph->seriesList().at(1)->setMesh(QAbstract3DSeries::Mesh::MeshPoint);
+
+    m_graph->axisX()->setLabelFormat(QStringLiteral("%.2f X"));
+    m_graph->axisY()->setLabelFormat(QStringLiteral("%.2f Y"));
+    m_graph->axisZ()->setLabelFormat(QStringLiteral("%.2f Z"));
+
+    m_graph->axisX()->setLabelAutoRotation(90);
+    m_graph->axisY()->setLabelAutoRotation(90);
+    m_graph->axisZ()->setLabelAutoRotation(90);
+
+    m_graph->axisX()->setRange(0,192);
+    m_graph->axisY()->setRange(-30,30);
+    
+
     //! [2]
 
     QThread *thread = new QThread;
@@ -81,7 +128,7 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter, Location *location
     thread->start();
 
     //! [3]
-    addData();
+    // addData();
     //! [3]
 }
 
@@ -91,26 +138,62 @@ void ScatterDataModifier::recvMsg(){
 }
 
 void ScatterDataModifier::updateData(){
-    m_graph->axisX()->setTitle("X");
-    m_graph->axisY()->setTitle("Y");
-    m_graph->axisZ()->setTitle("Z");
+    // m_graph->axisX()->setTitle("X");
+    // m_graph->axisY()->setTitle("Y");
+    // m_graph->axisZ()->setTitle("Z");
 
-    QScatterDataArray *dataArray = new QScatterDataArray;
-    dataArray->resize(TRAJECTORY_SIZE*2);
-    QScatterDataItem *ptrToDataArray = &dataArray->first();
-    for (int re_idx = 0; re_idx < 2; re_idx++)
+    // QColor color_ll = QColor(0,0,0);
+
+    for (int ll_idx = 0; ll_idx < LANE_LINES; ll_idx++)
     {
-        for (int i = 0; i < TRAJECTORY_SIZE; i++)
-        {
-            ptrToDataArray->setPosition(QVector3D(m_location->edgeX[re_idx][i],
+        QScatterDataArray *dataArray_ll = new QScatterDataArray;
+        dataArray_ll->resize(TRAJECTORY_SIZE);
+        QScatterDataItem *ptrToDataArray_ll = &dataArray_ll->first();
+
+        float colorMult = qBound((double)m_location->lane_line_prob[ll_idx], 0.0, 1.0);
+
+        // qDebug() << "colorMultLL: " << colorMult;
+        
+        QColor color_ll = QColor(colorMult, colorMult, colorMult);
+
+       for (int i = 0; i < TRAJECTORY_SIZE; i++) {
+            ptrToDataArray_ll->setPosition(QVector3D(m_location->laneX[ll_idx][i],
+                                                m_location->laneY[ll_idx][i],
+                                                m_location->laneZ[ll_idx][i]
+                                                ));
+            ptrToDataArray_ll++;
+       }
+
+        m_graph->seriesList().at(ll_idx)->dataProxy()->resetArray(dataArray_ll);
+        m_graph->seriesList().at(ll_idx)->setBaseColor(color_ll);
+
+    }
+    
+    QColor color_re = QColor(0,0,255);
+
+    for (int re_idx = 0; re_idx < 2; re_idx++){
+
+        QScatterDataArray *dataArray_re = new QScatterDataArray;
+        dataArray_re->resize(TRAJECTORY_SIZE); //6 = ll + re;
+        QScatterDataItem *ptrToDataArray_re = &dataArray_re->first();
+
+        float colorMult = qBound((double)1.0-m_location->road_edge_std[re_idx], 0.0, 1.0);
+
+        qDebug() << "colorMultRE: " << colorMult;
+        
+        color_re = QColor((int)255*colorMult, 0, 0);
+
+        for (int i = 0; i < TRAJECTORY_SIZE; i++) {
+            ptrToDataArray_re->setPosition(QVector3D(m_location->edgeX[re_idx][i],
                                                 m_location->edgeY[re_idx][i],
                                                 m_location->edgeZ[re_idx][i]
                                                 ));
-            ptrToDataArray++;
-        }      
+            ptrToDataArray_re++;
+        }
         
+        m_graph->seriesList().at(re_idx+4)->dataProxy()->resetArray(dataArray_re);
+        m_graph->seriesList().at(re_idx+4)->setBaseColor(color_re);
     }
-    m_graph->seriesList().at(0)->dataProxy()->resetArray(dataArray);
 }
 
 
@@ -128,6 +211,7 @@ void ScatterDataModifier::addData()
     m_graph->axisX()->setTitle("X");
     m_graph->axisY()->setTitle("Y");
     m_graph->axisZ()->setTitle("Z");
+
     //! [4]
 
     //! [5]
@@ -186,6 +270,19 @@ void ScatterDataModifier::changeTheme(int theme)
     emit gridEnabledChanged(currentTheme->isGridEnabled());
     emit fontChanged(currentTheme->font());
 }
+
+void ScatterDataModifier::rotateXAxis(int degs){
+    m_graph->scene()->activeCamera()->setWrapXRotation(true);
+    qDebug() << "Xdegs: " << degs;
+    m_graph->scene()->activeCamera()->setXRotation((float) degs);
+}
+
+void ScatterDataModifier::rotateYAxis(int degs){
+    m_graph->scene()->activeCamera()->setWrapYRotation(true);
+    qDebug() << "Ydegs: " << degs;
+    m_graph->scene()->activeCamera()->setYRotation((float) degs);
+}
+
 
 void ScatterDataModifier::changePresetCamera()
 {

@@ -20,6 +20,8 @@
 #include <QtDataVisualization/q3dscatter.h>
 #include <QtDataVisualization/qabstract3dseries.h>
 
+#include <QSlider>
+
 
 int main(int argc, char **argv)
 {
@@ -50,9 +52,18 @@ int main(int argc, char **argv)
     container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     container->setFocusPolicy(Qt::StrongFocus);
 
+    QSlider *sliderX = new QSlider(Qt::Orientation::Horizontal);
+    sliderX->setRange(-360,360);
+    QSlider *sliderY = new QSlider(Qt::Orientation::Horizontal);
+    sliderY->setRange(-360,360);
+
+
     QWidget *widget = new QWidget;
     QHBoxLayout *hLayout = new QHBoxLayout(widget);
     QVBoxLayout *vLayout = new QVBoxLayout();
+
+    vLayout->addWidget(sliderX);
+    vLayout->addWidget(sliderY);
     hLayout->addWidget(container, 1);
     hLayout->addLayout(vLayout);
     //scatter
@@ -65,6 +76,11 @@ int main(int argc, char **argv)
     mapwindow.show();
     Location *location = new Location();
     ScatterDataModifier *modifier = new ScatterDataModifier(graph, location);
+
+    QObject::connect(sliderX, &QSlider::valueChanged, modifier,
+                     &ScatterDataModifier::rotateXAxis);
+    QObject::connect(sliderY, &QSlider::valueChanged, modifier,
+                     &ScatterDataModifier::rotateYAxis);
 
     
     U2Window *u2window = new U2Window();

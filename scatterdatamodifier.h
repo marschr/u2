@@ -57,7 +57,8 @@ public:
     void toggleItemCount();
     void start();
 
-
+    void rotateXAxis(int degs);
+    void rotateYAxis(int degs);
     void updateData();
 
 public Q_SLOTS:

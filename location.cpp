@@ -37,20 +37,33 @@ void Location::handle_message(){
                 auto event = sm["modelV2"];
                 model = event.getModelV2();
                 
+                //lane lines
+                for (int ll_idx = 0; ll_idx < 4; ll_idx++) {                    
+                    if (model.getLaneLineProbs().size() > ll_idx) {
+                        lane_line_prob[ll_idx] = model.getLaneLineProbs()[ll_idx];
+                        lane_lines = model.getLaneLines()[ll_idx];
+                        for (int i = 0; i < TRAJECTORY_SIZE; i++)
+                        {
+                            laneX[ll_idx][i] = lane_lines.getX()[i];
+                            laneY[ll_idx][i] = lane_lines.getY()[i];
+                            laneZ[ll_idx][i] = lane_lines.getZ()[i];
+                        }
+                    } else {
+                        lane_line_prob[ll_idx] = 0.0;
+                    }
+                    
+                }
+
+                //road edges
                 for (int re_idx = 0; re_idx < 2; re_idx++) {
                     if (model.getRoadEdgeStds().size() > re_idx) {
                         road_edge_std[re_idx] = model.getRoadEdgeStds()[re_idx];
-
-                            // qDebug() << "RE IF";
-
-                            road_edges = model.getRoadEdges()[re_idx];
-                            for (int i = 0; i < TRAJECTORY_SIZE; i++) {
-                                 edgeX[re_idx][i] = road_edges.getX()[i];
-                                 edgeY[re_idx][i] = road_edges.getY()[i];
-                                 edgeZ[re_idx][i] = road_edges.getZ()[i];
-                                // qDebug() << "re_idx: " << re_idx << "; x: " << road_edges.getX()[i] << "; y: " << road_edges.getY()[i] << "; z: " << road_edges.getZ()[i];
-
-                            }                    
+                        road_edges = model.getRoadEdges()[re_idx];
+                        for (int i = 0; i < TRAJECTORY_SIZE; i++) {
+                                edgeX[re_idx][i] = road_edges.getX()[i];
+                                edgeY[re_idx][i] = road_edges.getY()[i];
+                                edgeZ[re_idx][i] = road_edges.getZ()[i];
+                        }                    
                     } else {
                         qDebug() << "got update: road_edge_std1.0";
                         road_edge_std[re_idx] = 1.0;

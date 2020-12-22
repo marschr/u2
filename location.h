@@ -33,13 +33,13 @@ Q_OBJECT
 
         cereal::ModelDataV2::XYZTData::Reader lane_lines;
         cereal::ModelDataV2::XYZTData::Reader road_edges;
-        float lane_line_prob[2];
+        float lane_line_prob[4];
         float road_edge_std[2];
         
         //should L/R lines/edges + trajectory xyz
-        float laneX[2][TRAJECTORY_SIZE];
-        float laneY[2][TRAJECTORY_SIZE];
-        float laneZ[2][TRAJECTORY_SIZE];
+        float laneX[4][TRAJECTORY_SIZE];
+        float laneY[4][TRAJECTORY_SIZE];
+        float laneZ[4][TRAJECTORY_SIZE];
 
         float edgeX[2][TRAJECTORY_SIZE];
         float edgeY[2][TRAJECTORY_SIZE];
