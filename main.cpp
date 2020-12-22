@@ -67,14 +67,14 @@ int main(int argc, char **argv)
     hLayout->addWidget(container, 1);
     hLayout->addLayout(vLayout);
     //scatter
-
-    
-    MapWindow mapwindow(settings);
-
-    
-    mapwindow.resize(800, 600);
-    mapwindow.show();
+       
+   
     Location *location = new Location();
+
+    MapWindow *mapwindow = new MapWindow(settings, location);
+    mapwindow->setGeometry(2000,900,1200,1200);
+    // mapwindow->resize(800, 600);
+
     ScatterDataModifier *modifier = new ScatterDataModifier(graph, location);
 
     QObject::connect(sliderX, &QSlider::valueChanged, modifier,
@@ -82,11 +82,26 @@ int main(int argc, char **argv)
     QObject::connect(sliderY, &QSlider::valueChanged, modifier,
                      &ScatterDataModifier::rotateYAxis);
 
+
+    QThread *thread = new QThread;
+    location->moveToThread(thread);
+
+    QObject::connect(thread, &QThread::started, location, &Location::handle_message);
+    QObject::connect(location, SIGNAL (newMsg()), modifier, SLOT (recvMsg()));
+
+    QObject::connect(thread, &QThread::started, location, &Location::handle_message);
+    QObject::connect(location, SIGNAL (newMsg()), mapwindow, SLOT (recvMsg()));
+
+
+    thread->start();
+
     
     U2Window *u2window = new U2Window();
-    u2window->resize(800, 600);
-    u2window->show();
+    // u2window->resize(800, 600);
+    // u2window->show();
+    widget->setGeometry(2000,70,container->minimumSize().width(), container->minimumSize().height());
     widget->show();
+    mapwindow->show();
 
 
     return app.exec();

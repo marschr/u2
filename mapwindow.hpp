@@ -8,6 +8,9 @@
 #include <QScopedPointer>
 #include <QtGlobal>
 
+#include "location.h"
+
+
 class QKeyEvent;
 class QMouseEvent;
 class QWheelEvent;
@@ -17,10 +20,13 @@ class MapWindow : public QOpenGLWidget
     Q_OBJECT
 
 public:
-    MapWindow(const QMapboxGLSettings &);
+    MapWindow(const QMapboxGLSettings &, Location *location);
     ~MapWindow();
 
     void selfTest();
+
+public Q_SLOTS:
+    void recvMsg();
 
 protected slots:
     void animationValueChanged();
@@ -55,7 +61,15 @@ private:
     QVariant m_lineAnnotationId;
     QVariant m_fillAnnotationId;
 
+    QVariant m_lineAnnotationIdL;
+    QVariant m_lineAnnotationIdR;
+
     bool m_sourceAdded = false;
+    bool m_source2Added = false;
+    bool m_enableRecv = false;
+    bool m_firstRun = true;
+    Location *m_location;
+    QMapbox::Coordinate m_lastCoords[2];
 };
 
 #endif

@@ -9,10 +9,16 @@
 #include <QMouseEvent>
 #include <QString>
 
+#include <QGeoCoordinate>
+
+
+#include "location.h"
+
 int kAnimationDuration = 10000;
 
-MapWindow::MapWindow(const QMapboxGLSettings &settings)
-    : m_settings(settings)
+MapWindow::MapWindow(const QMapboxGLSettings &settings, Location *location)
+    : m_settings(settings),
+    m_location(location)
 {
     setWindowIcon(QIcon(":icon.png"));
 }
@@ -71,6 +77,86 @@ void MapWindow::changeStyle()
     }
 
     m_sourceAdded = false;
+    m_source2Added = false;
+}
+
+void MapWindow::recvMsg(){
+    //0 -> left edge
+    //1 -> right edge
+    if(m_enableRecv){
+        if (m_location->modelConnected) {
+            if (m_firstRun){
+                //first run will be messy
+                QGeoCoordinate re_geo[2];
+                QGeoCoordinate egoPos = QGeoCoordinate((double)m_location->lat, (double)m_location->lon);
+              
+                //left
+                re_geo[0] = egoPos.atDistanceAndAzimuth(m_location->edgeY[0][0], m_location->bea+450); // Y U NO WORK -90 or +270degs!?
+                //right
+                re_geo[1] = egoPos.atDistanceAndAzimuth(m_location->edgeY[1][0], m_location->bea+90); //grab 0th vertex
+
+                m_lastCoords[0] = {re_geo[0].latitude(),re_geo[0].longitude()};
+                m_lastCoords[1] = {re_geo[1].latitude(),re_geo[1].longitude()};
+                
+                // m_map->setPitch(45);
+                m_map->setZoom(19);
+                m_firstRun = false;
+            }
+
+            // get data from modelV2
+            QGeoCoordinate re_geo[2];
+
+            QGeoCoordinate egoPos = QGeoCoordinate((double)m_location->lat, (double)m_location->lon);
+            re_geo[0] = egoPos.atDistanceAndAzimuth(m_location->edgeY[0][0], m_location->bea+450);
+            re_geo[1] = egoPos.atDistanceAndAzimuth(m_location->edgeY[1][0], m_location->bea+90);
+
+            // qDebug() << "m_location->bea: " << m_location->bea;
+
+            // m_lastCoords[0] = {re_geo[0].latitude(),re_geo[0].longitude()}; //left
+            // m_lastCoords[1] = {re_geo[1].latitude(),re_geo[1].longitude()}; //right
+
+            //plot on map stuff:
+            QMapbox::Coordinates coordinates[2];
+
+            coordinates[0].push_back(m_lastCoords[0]);
+            coordinates[0].push_back({re_geo[0].latitude(), re_geo[0].longitude()});
+
+            coordinates[1].push_back(m_lastCoords[1]);
+            coordinates[1].push_back({re_geo[1].latitude(), re_geo[1].longitude()});
+
+            QMapbox::CoordinatesCollection collection[2];
+            collection[0].push_back(coordinates[0]);
+            collection[1].push_back(coordinates[1]);
+
+            QMapbox::CoordinatesCollections lineGeometry[2];
+            lineGeometry[0].push_back(collection[0]);
+            lineGeometry[1].push_back(collection[1]);
+
+            QMapbox::ShapeAnnotationGeometry annotationGeometryL(QMapbox::ShapeAnnotationGeometry::LineStringType, lineGeometry[0]);
+            QMapbox::ShapeAnnotationGeometry annotationGeometryR(QMapbox::ShapeAnnotationGeometry::LineStringType, lineGeometry[1]);
+
+            QMapbox::LineAnnotation lineLeft;
+            lineLeft.geometry = annotationGeometryL;
+            lineLeft.opacity = 1.0f;
+            lineLeft.width = 2.0f;
+            lineLeft.color = Qt::red;
+            m_lineAnnotationIdL = m_map->addAnnotation(QVariant::fromValue<QMapbox::LineAnnotation>(lineLeft));
+
+            QMapbox::LineAnnotation lineRight;
+            lineRight.geometry = annotationGeometryR;
+            lineRight.opacity = 1.0f;
+            lineRight.width = 2.0f;
+            lineRight.color = Qt::blue;
+            m_lineAnnotationIdR = m_map->addAnnotation(QVariant::fromValue<QMapbox::LineAnnotation>(lineRight));
+
+
+            m_map->setCoordinate(QMapbox::Coordinate(m_lastCoords[1]));
+
+            m_lastCoords[0] = {re_geo[0].latitude(),re_geo[0].longitude()};
+            m_lastCoords[1] = {re_geo[1].latitude(),re_geo[1].longitude()};
+            
+        }
+    }
 }
 
 void MapWindow::keyPressEvent(QKeyEvent *ev)
@@ -78,6 +164,70 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
     switch (ev->key()) {
     case Qt::Key_S:
         changeStyle();
+        break;
+    case Qt::Key_M:
+        m_enableRecv = !m_enableRecv;
+        qDebug() << "M Pressed, recv: " << m_enableRecv;
+        break;
+    case Qt::Key_H: {
+            qDebug() << "H Pressed";
+            if (m_source2Added) {
+                return;
+            }
+
+            m_source2Added = true;
+
+            // auto& styles = QMapbox::defaultStyles();
+            // m_map->setStyleUrl(styles[5].first);
+            // setWindowTitle(QString("Mapbox GL: ") + styles[5].second);
+
+            
+            
+            // Not in all styles, but will work on streets
+            QString before = "waterway-label";
+
+            QFile geojson(":test2.geojson");
+            geojson.open(QIODevice::ReadOnly);
+
+
+
+            // Buildings extrusion
+            QVariantMap buildings;
+            buildings["id"] = "3d-buildings";
+            buildings["source"] = "composite";
+            buildings["source-layer"] = "building";
+            buildings["type"] = "fill-extrusion";
+            buildings["minzoom"] = 15.0;
+            m_map->addLayer(buildings);
+
+            QVariantList buildingsFilterExpression;
+            buildingsFilterExpression.append("==");
+            buildingsFilterExpression.append("extrude");
+            buildingsFilterExpression.append("true");
+
+            QVariantList buildingsFilter;
+            buildingsFilter.append(buildingsFilterExpression);
+
+            m_map->setFilter("3d-buildings", buildingsFilterExpression);
+
+            m_map->setPaintProperty("3d-buildings", "fill-extrusion-color", "gray");
+            m_map->setPaintProperty("3d-buildings", "fill-extrusion-opacity", 0.8);
+
+            QVariantMap extrusionHeight;
+            extrusionHeight["type"] = "identity";
+            extrusionHeight["property"] = "height";
+
+            m_map->setPaintProperty("3d-buildings", "fill-extrusion-height", extrusionHeight);
+
+            QVariantMap extrusionBase;
+            extrusionBase["type"] = "identity";
+            extrusionBase["property"] = "min_height";
+
+            m_map->setPaintProperty("3d-buildings", "fill-extrusion-base", extrusionBase);
+
+
+
+        }
         break;
     case Qt::Key_L: {
             if (m_sourceAdded) {
@@ -118,7 +268,7 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
             m_map->addLayer(route, before);
 
             m_map->setPaintProperty("route", "line-color", QColor("blue"));
-            m_map->setPaintProperty("route", "line-width", 2.0);
+            m_map->setPaintProperty("route", "line-width", 8.0);
             m_map->setLayoutProperty("route", "line-join", "round");
             m_map->setLayoutProperty("route", "line-cap", "round");
 
@@ -232,7 +382,7 @@ void MapWindow::keyPressEvent(QKeyEvent *ev)
               ]
             )JSON";
 
-            m_map->setPaintProperty("3d-buildings", "fill-extrusion-color", fillExtrusionColorJSON);
+            m_map->setPaintProperty("3d-buildings", "fill-extrusion-color", "gray");
             m_map->setPaintProperty("3d-buildings", "fill-extrusion-opacity", .6);
 
             QVariantMap extrusionHeight;
